@@ -22,7 +22,7 @@ const MenuItem: React.FC<{
   className?: string;
 }> = ({children, onClick, className}) => (
   <span
-    className={`px-3 py-1 cursor-pointer hover:bg-black/10 rounded-md transition-colors ${className}`}
+    className={`px-3 py-1 cursor-pointer hover:bg-black/5 rounded-md transition-colors ${className}`}
     onClick={onClick}
     onKeyDown={(e) => {
       if (e.key === 'Enter' || e.key === ' ') onClick?.();
@@ -42,16 +42,16 @@ export const Window: React.FC<WindowProps> = ({
   isParametersPanelOpen,
 }) => {
   return (
-    <div className="w-[900px] h-[680px] glass rounded-2xl shadow-[0_30px_70px_rgba(0,0,0,0.4)] flex flex-col relative overflow-hidden font-sans border border-white/50">
+    <div className="w-[920px] h-[700px] glass rounded-2xl flex flex-col relative overflow-hidden font-sans border border-white/40">
       {/* Title Bar */}
-      <div className="bg-white/60 h-11 px-4 flex justify-between items-center select-none cursor-default border-b border-black/10 flex-shrink-0">
+      <div className="bg-white/40 h-11 px-4 flex justify-between items-center select-none cursor-default border-b border-black/5 flex-shrink-0">
         <div className="flex gap-2 items-center w-24">
-          <div className="traffic-light traffic-red cursor-pointer" onClick={onExitToDesktop}></div>
+          <div className="traffic-light traffic-red" onClick={onExitToDesktop}></div>
           <div className="traffic-light traffic-yellow"></div>
           <div className="traffic-light traffic-green"></div>
         </div>
         
-        <span className="text-[14px] font-bold text-gray-900 absolute left-1/2 -translate-x-1/2 drop-shadow-sm">
+        <span className="text-[13px] font-bold text-gray-800 absolute left-1/2 -translate-x-1/2 tracking-tight">
           {title}
         </span>
         
@@ -59,7 +59,7 @@ export const Window: React.FC<WindowProps> = ({
       </div>
 
       {/* Menu Bar */}
-      <div className="bg-white/30 py-1.5 px-4 border-b border-black/10 select-none flex gap-2 flex-shrink-0 text-[13px] text-gray-800 items-center font-semibold">
+      <div className="bg-white/10 py-1.5 px-3 border-b border-black/5 select-none flex gap-1 flex-shrink-0 text-[12px] text-gray-700 items-center font-medium">
         {!isParametersPanelOpen && (
           <MenuItem onClick={onToggleParameters}>
             Parameters
@@ -71,13 +71,13 @@ export const Window: React.FC<WindowProps> = ({
         <MenuItem>Help</MenuItem>
         
         {isAppOpen && (
-          <MenuItem onClick={onExitToDesktop} className="ml-auto text-blue-700 font-bold hover:bg-blue-50">
+          <MenuItem onClick={onExitToDesktop} className="ml-auto text-blue-600 font-bold">
             Done
           </MenuItem>
         )}
       </div>
 
-      {/* Content Container - Higher contrast background */}
+      {/* Content Container */}
       <div className="flex-grow overflow-hidden bg-white/95">
         {children}
       </div>

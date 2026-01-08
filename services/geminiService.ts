@@ -8,9 +8,7 @@ import {APP_DEFINITIONS_CONFIG, getSystemPrompt} from '../constants';
 import {InteractionData} from '../types';
 
 if (!process.env.API_KEY) {
-  console.error(
-    'API_KEY environment variable is not set. The application will not be able to connect to the Gemini API.',
-  );
+  console.error('API_KEY not found. OS kernel restricted.');
 }
 
 const ai = new GoogleGenAI({apiKey: process.env.API_KEY!});
@@ -22,118 +20,81 @@ export async function* streamAppContent(
   const model = 'gemini-3-flash-preview'; 
 
   if (!process.env.API_KEY) {
-    yield `<div class="p-6 text-red-700 bg-red-100 rounded-lg m-4 border border-red-300 shadow-sm">
-      <p class="font-bold text-xl">System Configuration Error</p>
-      <p class="mt-2">The kernel requires an API_KEY to initialize this module.</p>
-    </div>`;
-    return;
-  }
-
-  if (interactionHistory.length === 0) {
-    yield `<div class="p-4 text-orange-700 bg-orange-100 rounded-lg">
-      <p class="font-bold">No interaction data provided.</p>
+    yield `<div class="p-8 text-red-700 bg-red-50 rounded-2xl m-6 border border-red-200">
+      <h2 class="font-bold text-xl mb-3">Authentication Failure</h2>
+      <p>The OS kernel requires a valid API key to synthesize application views.</p>
     </div>`;
     return;
   }
 
   const systemPrompt = getSystemPrompt(currentMaxHistoryLength);
-
   const currentInteraction = interactionHistory[0];
-  const pastInteractions = interactionHistory.slice(1);
+  const isSafari = currentInteraction.appContext === 'web_browser_app';
 
-  const currentElementName =
-    currentInteraction.elementText ||
-    currentInteraction.id ||
-    'Unknown Element';
+  let contextSummary = `Action: ${currentInteraction.type} on "${currentInteraction.elementText || currentInteraction.id}".`;
+  if (currentInteraction.value) contextSummary += ` Input: "${currentInteraction.value}".`;
   
-  let currentInteractionSummary = `Current User Interaction: Clicked on '${currentElementName}' (Type: ${currentInteraction.type || 'N/A'}, ID: ${currentInteraction.id || 'N/A'}).`;
-  if (currentInteraction.value) {
-    currentInteractionSummary += ` Associated value entered: '${currentInteraction.value}'.`;
-  }
-
-  const currentAppDef = APP_DEFINITIONS_CONFIG.find(
-    (app) => app.id === currentInteraction.appContext,
-  );
+  const prompt = `${systemPrompt}
   
-  const currentAppContext = currentInteraction.appContext
-    ? `Current App Context: '${currentAppDef?.name || currentInteraction.appContext}'.`
-    : 'No specific app context for current interaction.';
+Current Interaction: ${contextSummary}
+App Context: ${currentInteraction.appContext}
 
-  let historyPromptSegment = '';
-  if (pastInteractions.length > 0) {
-    const numPrevInteractionsToMention =
-      currentMaxHistoryLength - 1 > 0 ? currentMaxHistoryLength - 1 : 0;
-    historyPromptSegment = `\n\nPrevious User Interactions (up to ${numPrevInteractionsToMention} most recent):`;
+${isSafari ? "If the user entered a search query, use Google Search to provide up-to-date information and grounded links." : ""}
 
-    pastInteractions.forEach((interaction, index) => {
-      const pastElementName =
-        interaction.elementText || interaction.id || 'Unknown Element';
-      const appDef = APP_DEFINITIONS_CONFIG.find(
-        (app) => app.id === interaction.appContext,
-      );
-      const appName = interaction.appContext
-        ? appDef?.name || interaction.appContext
-        : 'N/A';
-      historyPromptSegment += `\n${index + 1}. (App: ${appName}) Clicked '${pastElementName}' (Type: ${interaction.type || 'N/A'}, ID: ${interaction.id || 'N/A'})`;
-      if (interaction.value) {
-        historyPromptSegment += ` with value '${interaction.value.substring(0, 50)}'`;
-      }
-      historyPromptSegment += '.';
-    });
-  }
-
-  const isBrowser = currentInteraction.appContext === 'web_browser_app';
-
-  const fullPrompt = `${systemPrompt}
-
-${currentInteractionSummary}
-${currentAppContext}
-${historyPromptSegment}
-
-${isBrowser ? "You are Safari. If the user provided a search query or URL in the interaction value, use the Google Search tool to find real-time information and display it as a functional web page with actual sources and links." : ""}
-
-Generate the high-contrast HTML content for the window's content area:`;
+Generate the HTML view for the application:`;
 
   try {
-    const config: any = {};
-    if (isBrowser) {
+    const config: any = {
+      temperature: 0.7,
+      topP: 0.95,
+      thinkingConfig: { thinkingBudget: 0 } // Flash doesn't need high budget for UI rendering
+    };
+    
+    if (isSafari) {
       config.tools = [{googleSearch: {}}];
     }
 
-    const response = await ai.models.generateContentStream({
+    const responseStream = await ai.models.generateContentStream({
       model: model,
-      contents: fullPrompt,
+      contents: prompt,
       config: config
     });
 
-    let hasGroundingMetadata = false;
+    let groundingSent = false;
 
-    for await (const chunk of response) {
+    for await (const chunk of responseStream) {
       if (chunk.text) {
         yield chunk.text;
       }
-      
-      // In a stream, grounding metadata might arrive at the end
-      if (chunk.candidates?.[0]?.groundingMetadata && !hasGroundingMetadata) {
+
+      // Handle grounding metadata at the end of the stream
+      if (chunk.candidates?.[0]?.groundingMetadata && !groundingSent) {
         const metadata = chunk.candidates[0].groundingMetadata;
-        if (metadata.groundingChunks && metadata.groundingChunks.length > 0) {
-          hasGroundingMetadata = true;
-          const links = metadata.groundingChunks
-            .filter((c: any) => c.web)
-            .map((c: any) => `<a href="${c.web.uri}" target="_blank" class="text-blue-600 underline block text-xs mt-1">${c.web.title || c.web.uri}</a>`)
-            .join('');
+        const chunks = metadata.groundingChunks || [];
+        const webLinks = chunks.filter((c: any) => c.web).map((c: any) => c.web);
+        
+        if (webLinks.length > 0) {
+          groundingSent = true;
+          const linksHtml = webLinks.map((link: any) => 
+            `<a href="${link.uri}" target="_blank" class="block p-3 hover:bg-black/5 rounded-lg border border-black/5 transition-colors no-underline">
+              <div class="text-[10px] text-gray-500 uppercase font-bold tracking-widest">${new URL(link.uri).hostname}</div>
+              <div class="text-sm font-semibold text-blue-600">${link.title || 'Source'}</div>
+            </a>`
+          ).join('');
           
-          if (links) {
-            yield `<div class="mt-8 p-4 bg-gray-50 border-t border-gray-200"><p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Sources from the web</p>${links}</div>`;
-          }
+          yield `<div class="mt-12 p-6 bg-gray-50 border-t border-black/5">
+            <h3 class="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-4">Verified Sources</h3>
+            <div class="grid grid-cols-1 gap-2">${linksHtml}</div>
+          </div>`;
         }
       }
     }
-  } catch (error) {
-    console.error('Error streaming from Gemini:', error);
-    yield `<div class="p-6 text-red-700 bg-red-100 rounded-lg m-4 border border-red-300">
-      <p class="font-bold text-lg">Kernel Execution Fault</p>
-      <p class="mt-2">The system encountered an error during UI synthesis. Please check your network connection.</p>
+  } catch (error: any) {
+    console.error('Synthesis Error:', error);
+    yield `<div class="p-8 text-red-700 bg-red-50 rounded-2xl m-6 border border-red-200">
+      <h2 class="font-bold text-xl mb-3">Kernel Runtime Error</h2>
+      <p>${error.message || 'The system failed to render this application state.'}</p>
+      <button class="os-button mt-4" onclick="location.reload()">Retry Connection</button>
     </div>`;
   }
 }

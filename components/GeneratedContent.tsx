@@ -10,7 +10,7 @@ interface GeneratedContentProps {
   htmlContent: string;
   onInteract: (data: InteractionData) => void;
   appContext: string | null;
-  isLoading: boolean; // Added isLoading prop
+  isLoading: boolean;
 }
 
 export const GeneratedContent: React.FC<GeneratedContentProps> = ({
@@ -20,7 +20,28 @@ export const GeneratedContent: React.FC<GeneratedContentProps> = ({
   isLoading,
 }) => {
   const contentRef = useRef<HTMLDivElement>(null);
-  const processedHtmlContentRef = useRef<string | null>(null); // Ref to track processed content
+  const processedHtmlContentRef = useRef<string | null>(null);
+
+  // Advanced sanitization to remove any markdown leakage
+  const sanitizeHtml = (raw: string) => {
+    let clean = raw.trim();
+    
+    // Remove all variations of markdown code blocks
+    clean = clean.replace(/```html\s*/gi, '');
+    clean = clean.replace(/```javascript\s*/gi, '');
+    clean = clean.replace(/```\s*/g, '');
+    
+    // Sometimes the model might output text like "Here is the code:" at the start
+    // We only want to start at the first HTML tag
+    const firstTagIndex = clean.indexOf('<');
+    if (firstTagIndex > 0) {
+      clean = clean.substring(firstTagIndex);
+    }
+    
+    return clean;
+  };
+
+  const cleanContent = sanitizeHtml(htmlContent);
 
   useEffect(() => {
     const container = contentRef.current;
@@ -72,9 +93,8 @@ export const GeneratedContent: React.FC<GeneratedContentProps> = ({
 
     container.addEventListener('click', handleClick);
 
-    // Process scripts only when loading is complete and content has changed
     if (!isLoading) {
-      if (htmlContent !== processedHtmlContentRef.current) {
+      if (cleanContent !== processedHtmlContentRef.current) {
         const scripts = Array.from(container.getElementsByTagName('script'));
         scripts.forEach((oldScript) => {
           try {
@@ -86,42 +106,27 @@ export const GeneratedContent: React.FC<GeneratedContentProps> = ({
 
             if (oldScript.parentNode) {
               oldScript.parentNode.replaceChild(newScript, oldScript);
-            } else {
-              console.warn(
-                'Script tag found without a parent node:',
-                oldScript,
-              );
             }
           } catch (e) {
-            console.error(
-              'Error processing/executing script tag. This usually indicates a syntax error in the LLM-generated script.',
-              {
-                scriptContent:
-                  oldScript.innerHTML.substring(0, 500) +
-                  (oldScript.innerHTML.length > 500 ? '...' : ''),
-                error: e,
-              },
-            );
+            console.error('Error executing script tag:', e);
           }
         });
-        processedHtmlContentRef.current = htmlContent; // Mark this content as processed
+        processedHtmlContentRef.current = cleanContent;
       }
     } else {
-      // If loading, reset the processed content ref. This ensures that when loading finishes,
-      // the new content (even if identical to a previous state before loading) is processed.
       processedHtmlContentRef.current = null;
     }
 
     return () => {
       container.removeEventListener('click', handleClick);
     };
-  }, [htmlContent, onInteract, appContext, isLoading]);
+  }, [cleanContent, onInteract, appContext, isLoading]);
 
   return (
     <div
       ref={contentRef}
       className="w-full h-full overflow-y-auto"
-      dangerouslySetInnerHTML={{__html: htmlContent}}
+      dangerouslySetInnerHTML={{__html: cleanContent}}
     />
   );
 };

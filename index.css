@@ -1,43 +1,176 @@
+/* Tahoe OS - Production Release Styles */
+@import "https://esm.sh/@tailwindcss/browser@^4.1.10";
+
+:root {
+  --tahoe-blue: #007AFF;
+  --tahoe-blue-dark: #0056B3;
+  --glass-bg: rgba(255, 255, 255, 0.72);
+  --glass-border: rgba(255, 255, 255, 0.4);
+}
+
 body {
   margin: 0;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background: radial-gradient(circle at top right, #6a11cb, transparent),
-              radial-gradient(circle at bottom left, #2575fc, transparent),
-              linear-gradient(to bottom, #1e3c72, #2a5298);
+  /* Premium macOS Tahoe Wallpaper Style */
+  background: linear-gradient(135deg, #1d1d1f 0%, #2a2a2c 100%);
+  background-image: 
+    radial-gradient(at 0% 0%, hsla(253,16%,7%,1) 0, transparent 50%), 
+    radial-gradient(at 50% 0%, hsla(225,39%,30%,1) 0, transparent 50%), 
+    radial-gradient(at 100% 0%, hsla(339,49%,30%,1) 0, transparent 50%), 
+    radial-gradient(at 0% 100%, hsla(339,49%,30%,1) 0, transparent 50%), 
+    radial-gradient(at 100% 100%, hsla(225,39%,30%,1) 0, transparent 50%);
   background-attachment: fixed;
   background-size: cover;
   height: 100vh;
   width: 100vw;
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Helvetica Neue", Arial, sans-serif;
+  overflow: hidden;
+}
+
+/* Glassmorphism */
+.glass {
+  background: var(--glass-bg);
+  backdrop-filter: blur(60px) saturate(210%);
+  -webkit-backdrop-filter: blur(60px) saturate(210%);
+  border: 1px solid var(--glass-border);
+  box-shadow: 0 40px 100px rgba(0, 0, 0, 0.5);
+}
+
+/* Tahoe UI Design System */
+.os-button {
+  background-color: var(--tahoe-blue);
+  color: white;
+  border-radius: 9px;
+  padding: 8px 20px;
+  font-weight: 600;
+  font-size: 13.5px;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+  border: none;
+  box-shadow: 0 2px 8px rgba(0, 122, 255, 0.3);
+}
+
+.os-button:hover {
+  background-color: var(--tahoe-blue-dark);
+  box-shadow: 0 4px 12px rgba(0, 122, 255, 0.4);
+}
+
+.os-button-secondary {
+  background-color: rgba(0, 0, 0, 0.05);
   color: #1a1a1a;
+  border-radius: 9px;
+  padding: 8px 20px;
+  font-weight: 600;
+  font-size: 13.5px;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  border: 1px solid rgba(0, 0, 0, 0.05);
 }
 
-#root {
-  height: 100vh;
-  width: 100vw;
-}
-
-/* Custom scrollbar to look like macOS */
-::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
-}
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.2);
+.os-input, .os-textarea {
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.12);
   border-radius: 10px;
-  border: 2px solid transparent;
-  background-clip: content-box;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(0, 0, 0, 0.4);
-  background-clip: content-box;
+  padding: 12px 14px;
+  font-size: 14px;
+  outline: none;
+  transition: all 0.2s ease;
+  color: #000;
+  box-shadow: inset 0 1px 2px rgba(0,0,0,0.05);
 }
 
-/* Ensure generated content has proper contrast */
-.os-text, p, span, div {
-  text-rendering: optimizeLegibility;
+.os-input:focus {
+  border-color: var(--tahoe-blue);
+  box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.2), inset 0 1px 2px rgba(0,0,0,0.05);
+}
+
+.os-title {
+  font-weight: 700;
+  font-size: 26px;
+  color: #000;
+  margin-bottom: 1.5rem;
+  letter-spacing: -0.025em;
+}
+
+.os-text {
+  font-size: 15px;
+  line-height: 1.55;
+  color: #1d1d1f;
+}
+
+.os-container {
+  background: #ffffff;
+  border-radius: 20px;
+  padding: 24px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+}
+
+/* Traffic Lights */
+.traffic-light {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 0.5px solid rgba(0, 0, 0, 0.12);
+  cursor: pointer;
+  transition: filter 0.2s;
+}
+
+.traffic-light:hover { filter: brightness(0.9); }
+.traffic-red { background-color: #FF5F56; }
+.traffic-yellow { background-color: #FFBD2E; }
+.traffic-green { background-color: #27C93F; }
+
+/* Dock */
+.dock {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  height: 76px;
+  padding: 0 14px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: rgba(255, 255, 255, 0.22);
+  backdrop-filter: blur(35px) saturate(160%);
+  -webkit-backdrop-filter: blur(35px) saturate(160%);
+  border-radius: 26px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+  z-index: 1000;
+}
+
+.dock-item {
+  width: 58px;
+  height: 58px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 16px;
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  cursor: pointer;
+  position: relative;
+}
+
+.dock-item:hover {
+  transform: scale(1.45) translateY(-14px);
+  background: rgba(255, 255, 255, 0.15);
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.12);
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover { background: rgba(0, 0, 0, 0.2); }
+
+.os-content-area {
+  height: 100%;
+  width: 100%;
+  overflow-y: auto;
+  background: #ffffff;
 }
