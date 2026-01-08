@@ -1,0 +1,6 @@
+{
+  "name": "Tahoe OS",
+  "description": "A macOS-themed operating system simulation with high-fidelity glassmorphism and dynamic interface generation.",
+  "requestFramePermissions": [],
+  "prompt": ""
+}
